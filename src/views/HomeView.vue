@@ -36,7 +36,6 @@
                         <v-card-actions>
                             <v-btn color="teal" text="View"></v-btn>
                             <v-btn color="blue" text="Edit" @click="editPost(post._id)"></v-btn>
-
                             <v-btn color="red" text="Delete" @click="deletePost(post._id)"></v-btn>
                         </v-card-actions>
                     </v-card>
