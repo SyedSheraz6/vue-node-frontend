@@ -19,7 +19,8 @@
                 <v-col v-else v-for="post in posts" cols="12" lg="3" md="4" sm="6" xs="12">
                     <v-card class="d-flex flex-column fill-height">
                         <v-img class="align-end text-white" height="200"
-                            src="https://cdn.vuetifyjs.com/images/cards/docks.jpg" cover>
+                            :src= "post.imageUrl ? `${BASE_URL}${post.imageUrl}` : 'https://cdn.vuetifyjs.com/images/cards/docks.jpg' "
+                             cover>
                             <v-card-title>{{ post.title }}</v-card-title>
                         </v-img>
 
@@ -33,7 +34,7 @@
                         </v-card-text>
                         <v-spacer></v-spacer>
 
-                        <v-card-actions >
+                        <v-card-actions>
                             <v-btn color="teal" text="View"></v-btn>
                             <v-spacer></v-spacer>
                             <v-btn color="blue" text="Edit" @click="editPost(post._id)"></v-btn>
@@ -56,15 +57,18 @@
                     <v-text-field class="mb-3" v-model="formInput.title" :rules="rules.title" label="Title"
                         hide-details="auto" single-line variant="outlined" </v-text-field>
 
-                    <v-text-field class="mb-3" v-model="formInput.subject" :rules="rules.subject"
-                        label="Subject" hide-details="auto" single-line variant="outlined"></v-text-field>
+                        <v-text-field class="mb-3" v-model="formInput.subject" :rules="rules.subject" label="Subject"
+                            hide-details="auto" single-line variant="outlined"></v-text-field>
 
-                    <v-textarea class="mb-3" v-model="formInput.message" :rules="rules.message" 
-                        label="Message" maxlength="120" hide-details="auto" counter multi-line variant="outlined"></v-textarea>
-                    <v-btn v-if="selectedId" @click="updatedPost(selectedId)" class="mb-8" color="blue" size="large"
-                        variant="tonal" block>Update</v-btn>
-                    <v-btn v-if="!selectedId" @click="createPost" class="mb-8" color="blue" size="large" variant="tonal"
-                        block>Create</v-btn>
+                        <v-file-input class="mb-3" v-model="formInput.image" :rules="rules.image"  prepend-icon="" prepend-inner-icon="mdi-paperclip" label="Upload Image"
+                            variant="outlined"v hide-details="auto" accept="image/*" show-size></v-file-input>
+                        <v-textarea class="mb-3" v-model="formInput.message" :rules="rules.message" label="Message"
+                            maxlength="120" hide-details="auto" counter multi-line variant="outlined"></v-textarea>
+
+                        <v-btn v-if="selectedId" @click="updatedPost(selectedId)" class="mb-8" color="blue" size="large"
+                            variant="tonal" block>Update</v-btn>
+                        <v-btn v-if="!selectedId" @click="createPost" class="mb-8" color="blue" size="large"
+                            variant="tonal" block>Create</v-btn>
 
                 </v-form>
             </v-card>
@@ -81,7 +85,7 @@ import { ref, reactive, onMounted, useTemplateRef } from 'vue'
 import SatatusBar from '@/components/SatatusBar.vue';
 import { getPosts, postPost, removePost, putPost } from '@/services/home'
 
-const user = JSON.parse(localStorage.getItem('user'))
+const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const postForm = useTemplateRef('create-post')
 
@@ -92,6 +96,7 @@ let posts = reactive([]);
 const formInput = ref({
     title: "",
     subject: "",
+    image: null,
     message: ""
 });
 
@@ -99,38 +104,46 @@ const rules = ref({
     title: [
         value => {
             if (value) return true
-            return 'You must enter a title.'
+            return 'Title is required field.'
         },
         value => {
-            if(value.length > 3 ) return true
+            if (value.length > 3) return true
             return "Tiltle should be atleast 4 charcters"
         }
     ],
     subject: [
         value => {
             if (value) return true
-            return 'You must enter a subject.'
+            return 'Subject is required field.'
         },
         value => {
-            if(value.length > 3 ) return true
+            if (value.length > 3) return true
             return "Subject should be atleast 4 charcters"
         },
         value => {
-            if(value.length < 21 ) return true
+            if (value.length < 21) return true
             return "Subject excceds 20 charcters limit"
         }
     ],
+    image: [
+    value => {
+            if (value.length) return true
+            return 'File is required'
+        },
+        // value => !value || value.size < 200000 || 'File size should be less than 2 MB.', // Max size 2 MB
+        // value => !value || ['image/jpeg', 'image/png'].includes(value.type) || 'Only JPEG and PNG files are allowed.', // File type rule
+      ],
     message: [
         value => {
             if (value) return true
-            return 'You must enter a message.'
+            return 'Message is required field.'
         },
         value => {
-            if(value.length > 3 ) return true
+            if (value.length > 3) return true
             return "Message should be atleast 4 charcters"
         },
         value => {
-            if(value.length < 121 ) return true
+            if (value.length < 121) return true
             return "Message excceds 120 charcters limit"
         }
     ],
@@ -150,6 +163,7 @@ const clearPostForm = () => {
     formInput.value.title = ""
     formInput.value.subject = ""
     formInput.value.message = ""
+    formInput.value.image = null
 }
 
 const handleClickOutside = () => {
@@ -173,16 +187,17 @@ const fetchPosts = async () => {
 
 const createPost = async () => {
     const createForm = await postForm.value.validate()
-    if(!createForm.valid) {
+    if (!createForm.valid) {
         return
     }
-    isApiLoading.value = true
+    const post = new FormData()
+    post.append('title', formInput.value.title)
+    post.append('subject', formInput.value.subject)
+    post.append('image', formInput.value.image)
+    post.append('message', formInput.value.message)
 
-    const post = {
-        title: formInput.value.title,
-        subject: formInput.value.subject,
-        message: formInput.value.message,
-    }
+    isApiLoading.value = true
+    
     const { message, error } = await postPost(post)
     if (error) {
         toast.open = true
@@ -198,24 +213,24 @@ const createPost = async () => {
 const editPost = (postId) => {
     postDialog.value = true
     selectedId.value = postId
-
     const postSelected = posts.find(post => post._id === postId)
     formInput.value.title = postSelected.title
     formInput.value.subject = postSelected.subject
+    formInput.value.image = postSelected.image
     formInput.value.message = postSelected.message
 }
 
 const updatedPost = async (postId) => {
     const updateForm = await postForm.value.validate()
-    if(!updateForm.valid) {
+    if (!updateForm.valid) {
         return
     }
     isApiLoading.value = true
-    const post = {
-        title: formInput.value.title,
-        subject: formInput.value.subject,
-        message: formInput.value.message,
-    }
+    const post = new FormData()
+    post.append('title', formInput.value.title)
+    post.append('subject', formInput.value.subject)
+    post.append('image', formInput.value.image)
+    post.append('message', formInput.value.message)
 
     const { message, error } = await putPost(post, postId)
     if (error) {
@@ -232,15 +247,15 @@ const updatedPost = async (postId) => {
 
 const deletePost = async (postId) => {
 
-isApiLoading.value = true
-const { message, error } = await removePost(postId)
-if (error) {
-    toast.open = true
-    toast.message = message
-    toast.color = "error"
-    setTimeout(() => toast.open = false, 2000)
-}
-fetchPosts()
+    isApiLoading.value = true
+    const { message, error } = await removePost(postId)
+    if (error) {
+        toast.open = true
+        toast.message = message
+        toast.color = "error"
+        setTimeout(() => toast.open = false, 2000)
+    }
+    fetchPosts()
 }
 
 </script>
