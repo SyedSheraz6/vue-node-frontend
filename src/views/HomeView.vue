@@ -16,12 +16,12 @@
                     <v-progress-circular v-if="isApiLoading" class="d-flex justify-center" :size="70" :width="7"
                         color="teal-darken-3" indeterminate></v-progress-circular>
                 </v-col>
-                <v-col v-else v-for="post in posts" cols="12" lg="3" md="4" sm="6" xs="12">
-                    <v-card class="d-flex flex-column fill-height">
+                <v-col v-else v-for="post in posts" cols="12" lg="3" md="4" sm="6" xs="12" >
+                    <v-card class="d-flex flex-column fill-height" >
                         <v-img class="align-end text-white" height="200"
                             :src= "post.imageUrl ? `${BASE_URL}${post.imageUrl}` : 'https://cdn.vuetifyjs.com/images/cards/docks.jpg' "
                              cover>
-                            <v-card-title>{{ post.title }}</v-card-title>
+                            <v-card-title class="text-h5">{{ post.title }}</v-card-title>
                         </v-img>
 
                         <v-card-subtitle class="pt-4">
@@ -30,7 +30,6 @@
 
                         <v-card-text>
                             {{ post.message }}
-
                         </v-card-text>
                         <v-spacer></v-spacer>
 
@@ -81,18 +80,20 @@
 
 <script setup>
 import { ref, reactive, onMounted, useTemplateRef } from 'vue'
+import { io } from "socket.io-client";
 
 import SatatusBar from '@/components/SatatusBar.vue';
 import { getPosts, postPost, removePost, putPost } from '@/services/home'
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
+const socket = io(BASE_URL)
 
 const postForm = useTemplateRef('create-post')
 
 const isApiLoading = ref(false)
 let selectedId = ref(null);
 const postDialog = ref(false);
-let posts = reactive([]);
+let posts = ref([]);
 const formInput = ref({
     title: "",
     subject: "",
@@ -156,7 +157,22 @@ const toast = reactive({
 })
 
 onMounted(() => {
+    
     fetchPosts()
+    socket.on('posts', (data) => {
+        if(data.action === "create") {
+            posts.value.push(data.post)
+        }
+        if(data.action === "delete") {
+            const postIndex = posts.value.findIndex(post => post._id === data.postId)
+            posts.value.splice(postIndex,1)
+        }
+        if(data.action === "update") {
+            const postIndex = posts.value.findIndex(post => post._id === data.postId)
+            posts.value.splice(postIndex,1, data.post)
+        }
+
+    })
 })
 
 const clearPostForm = () => {
@@ -172,10 +188,11 @@ const handleClickOutside = () => {
 }
 
 const fetchPosts = async () => {
+    
     isApiLoading.value = true
     const { data, message, status, error } = await getPosts()
     if (status === 200) {
-        posts = data
+        posts.value = data
     } else {
         toast.open = true
         toast.message = message
@@ -213,7 +230,7 @@ const createPost = async () => {
 const editPost = (postId) => {
     postDialog.value = true
     selectedId.value = postId
-    const postSelected = posts.find(post => post._id === postId)
+    const postSelected = posts.value.find(post => post._id === postId)
     formInput.value.title = postSelected.title
     formInput.value.subject = postSelected.subject
     formInput.value.image = postSelected.image

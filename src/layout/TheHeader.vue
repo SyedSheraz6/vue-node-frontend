@@ -10,14 +10,12 @@
       </v-app-bar-nav-icon>
     </template>
 
-    <v-btn>Home</v-btn>
-    <v-btn>My Posts</v-btn>
-
+    <v-btn to="/" >Home</v-btn>
+    <v-btn to="/myPosts"  v-if="isLoggedIn">My Posts</v-btn>
 
     <v-spacer></v-spacer>
 
-    <v-btn variant="outlined">{{ isLoggedIn ? `${loggedInUser.name} : ${loggedInUser.email}` : "No user is logged in"
-      }}</v-btn>
+    <v-btn variant="outlined">{{ isLoggedIn ? `${loggedInUser.name} : ${loggedInUser.email}` : "No user is logged in"}}</v-btn>
 
     <v-spacer></v-spacer>
 
@@ -95,6 +93,7 @@
 import { reactive, ref, useTemplateRef } from "vue";
 import { registerUser, loginUser } from '../services/auth'
 
+
 const registerForm = useTemplateRef('signup')
 const signInForm = useTemplateRef('signin')
 
@@ -104,7 +103,6 @@ const loading = ref(false)
 const isLoggedIn = ref(localStorage.getItem('user'))
 
 const loggedInUser = ref(JSON.parse(localStorage.getItem('user')))
-
 
 const toast = reactive({
   open: false,

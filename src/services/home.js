@@ -35,6 +35,29 @@ export const getPosts = async () => {
     return responseData
 }
 
+export const getMyPosts = async () => {
+    setAuthHeader()
+    let responseData = {}
+    responseData.error = false
+
+    const url = BASE_URL + 'my-posts'
+
+    try {
+        const response = await axios.get(url, {headers: authHeader} )
+        if (response.data.data) {
+            responseData.data = response.data.data
+            responseData.message = response.data.message
+            responseData.status = response.status
+        }
+        
+    } catch (error) {
+        responseData.error = true
+        responseData.message =  error.response.data ? error.response.data.message : error.message
+    }
+
+    return responseData
+}
+
 export const postPost = async (data) => {
     setAuthHeader()
     let responseData = {}

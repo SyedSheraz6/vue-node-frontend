@@ -3,7 +3,7 @@
     <TheHeader />
     <!-- <TheSideDrawer class="d-sm-none"/> -->
     <v-main class="mt-5" style="background-color: #eaf3f9">
-      <HomeView/>
+       <RouterView />
     </v-main>
 
 
@@ -16,13 +16,11 @@
 import TheHeader from "@/layout/TheHeader.vue";
 import TheSideDrawer from "@/layout/TheSideDrawer.vue";
 
-import HomeView from "./views/HomeView.vue";
-
 </script>
 
 
 <style scoped>
-::v-deep .v-main {
+:deep(.v-main) {
   --v-layout-left: 0 !important;
 }
 .card {
