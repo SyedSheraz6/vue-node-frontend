@@ -47,12 +47,16 @@
               </v-btn>
             </v-form>
           </v-card-text>
-
-          <span>
+          
+          <div class="text-center">
+            <p>
             If you have not registered yourself: <v-btn @click="loginDialog = false; signupDialog = true" variant="text"
               color="teal-darken-4">Signup</v-btn>
-          </span>
-
+            </p>
+          <p>Forget Password?  <v-btn @click="loginDialog = false; resetDialog = true" variant="text"
+            color="teal-darken-4">Reset</v-btn></p>
+          </div>
+          
 
         </v-card>
     </v-dialog>
@@ -70,15 +74,35 @@
             <v-text-field v-model="signupForm.password" :rules="rules.password" color="primary" label="Password"
               placeholder="Enter your password" variant="outlined"></v-text-field>
           </v-card-text>
+          
 
           <v-card-actions>
             <v-btn :loading="loading" type="submit" color="success" block variant="elevated" size="large">
               Sign Up
             </v-btn>
-
           </v-card-actions>
           <span>If you are already registered: <v-btn @click="loginDialog = true; signupDialog = false" variant="text"
               color="teal-darken-4">Signin</v-btn></span>
+
+        </v-card>
+      </v-form>
+
+    </v-dialog>
+
+    <v-dialog v-model="resetDialog" class="w-50" @click:outside="handleClickOutside">
+      <v-form @submit.prevent="reset">
+        <v-card title="Reset Password" subtitle="Enter email to recieve a link to reset yout password."class="pa-4">
+          <v-card-text>
+            <v-text-field v-model="resetForm.email" :rules="rules.email" color="primary" label="Email"
+              variant="outlined"></v-text-field>
+          </v-card-text>
+
+          <v-card-actions>
+            <v-btn :loading="loading" type="submit" variant="elevated" block color="teal">
+              Reset
+            </v-btn>
+            <!-- <v-btn @click="resetDialog = false; loginDialog = true">Signin</v-btn> -->
+          </v-card-actions>
 
         </v-card>
       </v-form>
@@ -90,8 +114,8 @@
 </template>
 
 <script setup>
-import { reactive, ref, useTemplateRef } from "vue";
-import { registerUser, loginUser } from '../services/auth'
+import { reactive, ref, useTemplateRef, onMounted } from "vue";
+import { registerUser, loginUser, getResetLink } from '../services/auth'
 
 
 const registerForm = useTemplateRef('signup')
@@ -99,6 +123,7 @@ const signInForm = useTemplateRef('signin')
 
 const loginDialog = ref(false)
 const signupDialog = ref(false)
+const resetDialog = ref(false)
 const loading = ref(false)
 const isLoggedIn = ref(localStorage.getItem('user'))
 
@@ -119,6 +144,10 @@ const signupForm = reactive({
 const loginForm = reactive({
   email: "",
   password: ""
+})
+
+const resetForm = reactive({
+  email: "",
 })
 
 const rules = ref({
@@ -155,6 +184,10 @@ const rules = ref({
 
 })
 
+onMounted(() => {
+  isLoggedIn.value = localStorage.getItem('user')
+})
+
 const handleClickOutside = () => {
   loginForm.email = ""
   loginForm.password = ""
@@ -162,6 +195,8 @@ const handleClickOutside = () => {
   signupForm.name = ""
   signupForm.email = ""
   signupForm.password = ""
+
+  resetForm.email = ""
 }
 
 const login = async () => {
@@ -219,6 +254,30 @@ const signup = async () => {
     signupForm.email = ""
     signupForm.password = ""
   }
+}
+
+const reset = async () => {
+  loading.value = true
+  const {message,error } = await getResetLink(resetForm)
+  if (error) {
+    toast.open = true
+    toast.message = message
+    toast.color = "error"
+    setTimeout(() => toast.open = false, 2000)
+    loading.value = false
+  }
+  else {
+    toast.open = true
+    toast.message = message
+    toast.color = "success"
+    setTimeout(() => toast.open = false, 5000)
+    
+    loading.value = false
+    resetDialog.value = false
+    resetForm.email = ""
+  }
+   
+  
 }
 </script>
 
